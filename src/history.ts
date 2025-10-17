@@ -122,11 +122,15 @@ async function archiveHistoryItem(id: string): Promise<void> {
 
 // 設置歷史記錄監聽器
 export function setupHistoryListeners(): void {
+  console.log("設置歷史記錄按鈕監聽器...", historyBtn, closeHistoryBtn);
+
   historyBtn?.addEventListener("click", async () => {
+    console.log("歷史記錄按鈕被點擊");
     await showHistory();
   });
 
   closeHistoryBtn?.addEventListener("click", () => {
+    console.log("關閉歷史記錄按鈕被點擊");
     hideHistory();
   });
 }

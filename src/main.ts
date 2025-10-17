@@ -14,12 +14,22 @@ console.log("Frontend script loaded!");
 
 // 初始化應用程式
 async function initializeApp() {
-  // 首先初始化 store
-  await initStore();
+  console.log("開始初始化應用程式...");
+
   // 檢查 textarea 是否存在
   if (!textarea) {
     console.error("找不到 textarea 元素");
     return;
+  }
+  console.log("Textarea 元素找到");
+
+  // 首先初始化 store
+  console.log("初始化 Store...");
+  try {
+    await initStore();
+    console.log("Store 初始化成功");
+  } catch (error) {
+    console.error("Store 初始化失敗:", error);
   }
 
   // 載入筆記內容
@@ -54,17 +64,80 @@ async function initializeApp() {
   console.log("已註冊 textarea 輸入監聽器");
 
   // 初始化各個子系統
-  initTheme();
-  await initFontSystem();
-  initShortcut();
+  try {
+    console.log("初始化主題系統...");
+    initTheme();
+    console.log("主題系統初始化完成");
+  } catch (error) {
+    console.error("主題系統初始化失敗:", error);
+  }
+
+  try {
+    console.log("初始化字體系統...");
+    await initFontSystem();
+    console.log("字體系統初始化完成");
+  } catch (error) {
+    console.error("字體系統初始化失敗:", error);
+  }
+
+  try {
+    console.log("初始化快捷鍵系統...");
+    initShortcut();
+    console.log("快捷鍵系統初始化完成");
+  } catch (error) {
+    console.error("快捷鍵系統初始化失敗:", error);
+  }
 
   // 設置事件監聽器
-  setupColorListeners();
-  setupFontListeners();
-  setupHistoryListeners();
-  setupArchiveListeners();
-  setupTrashListeners();
-  setupSettingsListeners();
+  try {
+    console.log("設置配色監聽器...");
+    setupColorListeners();
+    console.log("配色監聽器設置完成");
+  } catch (error) {
+    console.error("配色監聽器設置失敗:", error);
+  }
+
+  try {
+    console.log("設置字體監聽器...");
+    setupFontListeners();
+    console.log("字體監聽器設置完成");
+  } catch (error) {
+    console.error("字體監聽器設置失敗:", error);
+  }
+
+  try {
+    console.log("設置歷史記錄監聽器...");
+    setupHistoryListeners();
+    console.log("歷史記錄監聽器設置完成");
+  } catch (error) {
+    console.error("歷史記錄監聽器設置失敗:", error);
+  }
+
+  try {
+    console.log("設置封存監聽器...");
+    setupArchiveListeners();
+    console.log("封存監聽器設置完成");
+  } catch (error) {
+    console.error("封存監聽器設置失敗:", error);
+  }
+
+  try {
+    console.log("設置垃圾桶監聽器...");
+    setupTrashListeners();
+    console.log("垃圾桶監聽器設置完成");
+  } catch (error) {
+    console.error("垃圾桶監聽器設置失敗:", error);
+  }
+
+  try {
+    console.log("設置設定監聽器...");
+    setupSettingsListeners();
+    console.log("設定監聽器設置完成");
+  } catch (error) {
+    console.error("設定監聽器設置失敗:", error);
+  }
+
+  console.log("✅ 所有監聽器設置完成!");
 
   // 新增便條按鈕事件
   newMemoBtn?.addEventListener("click", async () => {

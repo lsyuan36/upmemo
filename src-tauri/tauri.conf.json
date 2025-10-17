@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schemas/2.0.0/tauri-app.schema.json",
   "productName": "upmemo",
-  "version": "0.1.0-beta",
+  "version": "0.1.0",
   "identifier": "com.tauri.upmemo",
   "build": {
     "beforeBuildCommand": "npm run build",
