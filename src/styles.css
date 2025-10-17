@@ -1,0 +1,771 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+}
+
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  box-sizing: border-box;
+  position: relative;
+  /* 背景色由 JavaScript 動態設置以支持透明度 */
+}
+
+/* 控制列樣式 */
+.control-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: linear-gradient(180deg, #f8f0b0 0%, #f5e79e 100%);
+  border-bottom: 1px solid #e0d080;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: move;
+  -webkit-app-region: drag;
+}
+
+.control-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  color: #555;
+  -webkit-app-region: no-drag;
+}
+
+.control-btn:hover {
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.control-btn:active {
+  transform: translateY(0) scale(0.96);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn svg {
+  pointer-events: none;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.shortcut-hint {
+  font-size: 11px;
+  color: #666;
+  padding: 0 8px;
+  white-space: nowrap;
+  user-select: none;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* 筆記內容區 */
+#note-content {
+  flex: 1;
+  width: 100%;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  resize: none;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 14px;
+  color: #333;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* 歷史記錄面板 */
+.history-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #fefabc;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.history-panel.hidden {
+  display: none;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f5e79e;
+  border-bottom: 1px solid #e0d080;
+}
+
+.history-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+}
+
+.close-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.close-btn:hover {
+  background-color: #ffdddd;
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.history-item {
+  position: relative;
+  background-color: #fff;
+  border: 1px solid #e0d080;
+  border-radius: 4px;
+  padding: 8px 28px 8px 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-item:hover {
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: translateX(2px);
+}
+
+.history-item-time {
+  font-size: 10px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.history-item-preview {
+  font-size: 12px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.history-item-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.history-item:hover .history-item-delete {
+  opacity: 1;
+}
+
+.history-item-delete:hover {
+  background-color: #ffdddd;
+  color: #d00;
+  transform: scale(1.1);
+}
+
+.history-item-archive {
+  position: absolute;
+  top: 6px;
+  right: 28px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 3px;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  opacity: 0;
+}
+
+.history-item:hover .history-item-archive {
+  opacity: 1;
+}
+
+.history-item-archive:hover {
+  background-color: #e0f0ff;
+  transform: scale(1.1);
+}
+
+/* 封存面板 */
+.archive-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #fefabc;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.archive-panel.hidden {
+  display: none;
+}
+
+.archive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f5e79e;
+  border-bottom: 1px solid #e0d080;
+}
+
+.archive-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+}
+
+.archive-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.archive-item {
+  position: relative;
+  background-color: #fff;
+  border: 1px solid #e0d080;
+  border-radius: 4px;
+  padding: 8px 60px 8px 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.archive-item:hover {
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.archive-item-time {
+  font-size: 10px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.archive-item-preview {
+  font-size: 12px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.archive-item-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.archive-item:hover .archive-item-actions {
+  opacity: 1;
+}
+
+.archive-item-restore,
+.archive-item-delete-permanently {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.archive-item-restore {
+  background-color: #e0f0e0;
+  color: #060;
+}
+
+.archive-item-restore:hover {
+  background-color: #d0e8d0;
+  transform: scale(1.05);
+}
+
+.archive-item-delete-permanently {
+  background-color: #ffdddd;
+  color: #d00;
+}
+
+.archive-item-delete-permanently:hover {
+  background-color: #ffcccc;
+  transform: scale(1.05);
+}
+
+/* 垃圾桶面板 */
+.trash-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #fefabc;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.trash-panel.hidden {
+  display: none;
+}
+
+.trash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f5e79e;
+  border-bottom: 1px solid #e0d080;
+}
+
+.trash-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+}
+
+.trash-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.empty-trash-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  border: none;
+  border-radius: 4px;
+  background-color: #ffdddd;
+  color: #d00;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.empty-trash-btn:hover {
+  background-color: #ffcccc;
+}
+
+.trash-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.trash-item {
+  position: relative;
+  background-color: #fff;
+  border: 1px solid #e0d080;
+  border-radius: 4px;
+  padding: 8px 60px 8px 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.trash-item:hover {
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.trash-item-time {
+  font-size: 10px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.trash-item-preview {
+  font-size: 12px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.trash-item-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.trash-item:hover .trash-item-actions {
+  opacity: 1;
+}
+
+.trash-item-restore,
+.trash-item-delete-permanently {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.trash-item-restore {
+  background-color: #e0f0e0;
+  color: #060;
+}
+
+.trash-item-restore:hover {
+  background-color: #d0e8d0;
+  transform: scale(1.05);
+}
+
+.trash-item-delete-permanently {
+  background-color: #ffdddd;
+  color: #d00;
+}
+
+.trash-item-delete-permanently:hover {
+  background-color: #ffcccc;
+  transform: scale(1.05);
+}
+
+/* 設定面板 */
+.settings-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #fefabc;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.settings-panel.hidden {
+  display: none;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f5e79e;
+  border-bottom: 1px solid #e0d080;
+}
+
+.settings-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.settings-section {
+  margin-bottom: 12px;
+}
+
+.settings-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: #555;
+  font-weight: 600;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.setting-item label {
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+}
+
+.setting-item-row {
+  display: flex;
+  gap: 6px;
+}
+
+.shortcut-input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #e0d080;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 11px;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  min-width: 0;
+}
+
+.shortcut-input:focus {
+  outline: none;
+  border-color: #c0b060;
+  background-color: #fffef5;
+}
+
+.shortcut-input::placeholder {
+  color: #999;
+  font-size: 10px;
+}
+
+.reset-btn {
+  padding: 6px 10px;
+  font-size: 10px;
+  border: none;
+  border-radius: 4px;
+  background-color: #f5e79e;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.reset-btn:hover {
+  background-color: #e0d080;
+}
+
+.setting-info {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  border-left: 2px solid #f5e79e;
+}
+
+.setting-info small {
+  font-size: 10px;
+  color: #666;
+  line-height: 1.3;
+  display: block;
+}
+
+.font-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #e0d080;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 11px;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.font-select:focus {
+  outline: none;
+  border-color: #c0b060;
+  background-color: #fffef5;
+}
+
+/* 配色選擇器 */
+.color-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-option {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.color-option.active {
+  border: 3px solid #333;
+  transform: scale(1.05);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 字體大小滑桿 */
+.font-size-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #e0d080;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.font-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f5e79e;
+  cursor: pointer;
+  border: 2px solid #c0b060;
+  transition: all 0.2s;
+}
+
+.font-size-slider::-webkit-slider-thumb:hover {
+  background: #e0d080;
+  transform: scale(1.2);
+}
+
+.font-size-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f5e79e;
+  cursor: pointer;
+  border: 2px solid #c0b060;
+  transition: all 0.2s;
+}
+
+.font-size-slider::-moz-range-thumb:hover {
+  background: #e0d080;
+  transform: scale(1.2);
+}
+
+.font-size-value {
+  font-size: 11px;
+  color: #666;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* 透明度滑桿 */
+.opacity-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #e0d080;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f5e79e;
+  cursor: pointer;
+  border: 2px solid #c0b060;
+  transition: all 0.2s;
+}
+
+.opacity-slider::-webkit-slider-thumb:hover {
+  background: #e0d080;
+  transform: scale(1.2);
+}
+
+.opacity-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f5e79e;
+  cursor: pointer;
+  border: 2px solid #c0b060;
+  transition: all 0.2s;
+}
+
+.opacity-slider::-moz-range-thumb:hover {
+  background: #e0d080;
+  transform: scale(1.2);
+}
+
+.opacity-value {
+  font-size: 11px;
+  color: #666;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+}

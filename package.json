@@ -1,0 +1,21 @@
+{
+  "name": "upmemo",
+  "private": true,
+  "version": "0.1.0-beta",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "serve": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0-beta.13",
+    "@tauri-apps/plugin-store": "^2.4.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0-beta.19",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11"
+  }
+}

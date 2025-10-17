@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UpMemo</title>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- 控制列 -->
+      <div class="control-bar" data-tauri-drag-region>
+        <button id="new-memo-btn" class="control-btn" title="新增便利貼 (會自動保存當前內容到歷史)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
+          </svg>
+        </button>
+        <button id="history-btn" class="control-btn" title="查看歷史記錄">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H4z"/>
+            <path d="M5 4h6v1H5V4zm0 2h6v1H5V6zm0 2h6v1H5V8zm0 2h3v1H5v-1z"/>
+          </svg>
+        </button>
+        <button id="archive-btn" class="control-btn" title="封存">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M0 2a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1v7.5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 1 12.5V5a1 1 0 0 1-1-1V2zm2 3v7.5A1.5 1.5 0 0 0 3.5 14h9a1.5 1.5 0 0 0 1.5-1.5V5H2zm13-3H1v2h14V2zM5 7.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+        </button>
+        <button id="trash-btn" class="control-btn" title="垃圾桶">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+          </svg>
+        </button>
+        <div class="spacer"></div>
+        <span id="shortcut-hint" class="shortcut-hint">Ctrl+↓ 隱藏/顯示</span>
+        <button id="settings-btn" class="control-btn" title="設定">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 筆記內容區 -->
+      <textarea id="note-content" placeholder="輸入你的筆記..."></textarea>
+
+      <!-- 歷史記錄面板 (預設隱藏) -->
+      <div id="history-panel" class="history-panel hidden">
+        <div class="history-header">
+          <h3>歷史記錄</h3>
+          <button id="close-history-btn" class="close-btn">×</button>
+        </div>
+        <div id="history-list" class="history-list">
+          <!-- 歷史記錄項目會動態插入這裡 -->
+        </div>
+      </div>
+
+      <!-- 封存面板 (預設隱藏) -->
+      <div id="archive-panel" class="archive-panel hidden">
+        <div class="archive-header">
+          <h3>封存</h3>
+          <button id="close-archive-btn" class="close-btn">×</button>
+        </div>
+        <div id="archive-list" class="archive-list">
+          <!-- 封存項目會動態插入這裡 -->
+        </div>
+      </div>
+
+      <!-- 垃圾桶面板 (預設隱藏) -->
+      <div id="trash-panel" class="trash-panel hidden">
+        <div class="trash-header">
+          <h3>垃圾桶</h3>
+          <div class="trash-header-actions">
+            <button id="empty-trash-btn" class="empty-trash-btn" title="清空垃圾桶">清空</button>
+            <button id="close-trash-btn" class="close-btn">×</button>
+          </div>
+        </div>
+        <div id="trash-list" class="trash-list">
+          <!-- 垃圾桶項目會動態插入這裡 -->
+        </div>
+      </div>
+
+      <!-- 設定面板 (預設隱藏) -->
+      <div id="settings-panel" class="settings-panel hidden">
+        <div class="settings-header">
+          <h3>設定</h3>
+          <button id="close-settings-btn" class="close-btn">×</button>
+        </div>
+        <div class="settings-content">
+          <div class="settings-section">
+            <h4>快捷鍵設定</h4>
+            <div class="setting-item">
+              <label for="toggle-shortcut">顯示/隱藏視窗</label>
+              <div class="setting-item-row">
+                <input type="text" id="toggle-shortcut" class="shortcut-input" readonly placeholder="點擊設定">
+                <button id="reset-toggle-shortcut" class="reset-btn">重置</button>
+              </div>
+            </div>
+            <div class="setting-info">
+              <small>💡 點擊輸入框後按下快捷鍵組合</small>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h4>配色設定</h4>
+            <div class="setting-item">
+              <label>選擇配色</label>
+              <div class="color-picker">
+                <button class="color-option" data-color="yellow" title="經典黃色" style="background-color: #fefabc;"></button>
+                <button class="color-option" data-color="pink" title="粉紅色" style="background-color: #ffd4e5;"></button>
+                <button class="color-option" data-color="blue" title="淺藍色" style="background-color: #d4e5ff;"></button>
+                <button class="color-option" data-color="green" title="淺綠色" style="background-color: #d4ffd4;"></button>
+                <button class="color-option" data-color="purple" title="淺紫色" style="background-color: #e5d4ff;"></button>
+                <button class="color-option" data-color="white" title="白色" style="background-color: #ffffff; border: 2px solid #ccc;"></button>
+              </div>
+            </div>
+            <div class="setting-item">
+              <label for="opacity">背景透明度</label>
+              <div class="setting-item-row">
+                <input type="range" id="opacity" class="opacity-slider" min="50" max="100" step="5" value="100">
+                <span id="opacity-value" class="opacity-value">100%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h4>字體設定</h4>
+            <div class="setting-item">
+              <label for="chinese-font">中文字體</label>
+              <select id="chinese-font" class="font-select">
+                <option value="">載入中...</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label for="english-font">英文字體</label>
+              <select id="english-font" class="font-select">
+                <option value="">載入中...</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label for="font-size">字體大小</label>
+              <div class="setting-item-row">
+                <input type="range" id="font-size" class="font-size-slider" min="10" max="24" step="1" value="14">
+                <span id="font-size-value" class="font-size-value">14px</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
