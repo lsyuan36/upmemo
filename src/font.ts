@@ -1,4 +1,4 @@
-import { chineseFontSelect, englishFontSelect, fontSizeSlider, fontSizeValue, textarea } from "./dom";
+import { chineseFontSelect, englishFontSelect, fontSizeSlider, fontSizeValue, noteDisplay } from "./dom";
 import { getSystemFonts, loadFontConfig as loadFontConfigAPI, saveFontConfig as saveFontConfigAPI } from "./api";
 import type { FontConfig } from "./types";
 import { DEFAULT_FONT_SIZE } from "./constants";
@@ -65,7 +65,7 @@ export async function saveFontConfig(): Promise<void> {
 }
 
 export function applyFontConfig(): void {
-  if (textarea) {
+  if (noteDisplay) {
     const oldStyle = document.getElementById('font-style');
     if (oldStyle) {
       oldStyle.remove();
@@ -74,10 +74,7 @@ export function applyFontConfig(): void {
     const style = document.createElement('style');
     style.id = 'font-style';
     style.textContent = `
-      #note-content {
-        font-family: "${currentFontConfig.english_font}", sans-serif;
-      }
-      #note-content::placeholder {
+      .note-display {
         font-family: "${currentFontConfig.english_font}", sans-serif;
       }
       @supports (unicode-range: U+4E00-9FFF) {
@@ -86,7 +83,7 @@ export function applyFontConfig(): void {
           src: local("${currentFontConfig.chinese_font}");
           unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF;
         }
-        #note-content {
+        .note-display {
           font-family: 'CustomChinese', "${currentFontConfig.english_font}", sans-serif;
         }
       }
@@ -125,8 +122,8 @@ export function updateFontSize(size: number): void {
 }
 
 export function applyFontSize(): void {
-  if (textarea) {
-    textarea.style.fontSize = `${currentFontSize}px`;
+  if (noteDisplay) {
+    noteDisplay.style.fontSize = `${currentFontSize}px`;
     console.log(`已應用字體大小: ${currentFontSize}px`);
   }
 }

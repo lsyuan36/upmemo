@@ -4,6 +4,7 @@
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::collections::HashMap;
 use tauri::{Manager, Emitter};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{TrayIconBuilder, MouseButton, MouseButtonState};
@@ -25,23 +26,52 @@ struct FontConfig {
     english_font: String,
 }
 
-// 全域狀態：當前註冊的快捷鍵和當前便條 ID
+// 便利貼資料結構
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct StickyNote {
+    id: String,              // 唯一識別碼
+    content: String,         // 便利貼內容
+    position: Position,      // 視窗位置
+    size: Size,              // 視窗大小
+    color: String,           // 配色主題
+    opacity: u32,            // 透明度 (0-100)
+    created_at: u64,         // 建立時間戳
+    updated_at: u64,         // 最後更新時間戳
+    is_visible: bool,        // 視窗是否可見
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct Position {
+    x: i32,
+    y: i32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct Size {
+    width: u32,
+    height: u32,
+}
+
+// 全域狀態：當前註冊的快捷鍵、當前便條 ID 和所有便利貼
 struct AppState {
     current_shortcut: Mutex<Option<String>>,
     current_memo_id: Mutex<Option<String>>,
+    sticky_notes: Mutex<std::collections::HashMap<String, StickyNote>>, // ID -> StickyNote 映射
 }
 
 // 註冊全域快捷鍵
 #[tauri::command]
 fn register_shortcut(app: tauri::AppHandle, shortcut_str: String) -> Result<(), String> {
     // 先取消之前的快捷鍵
-    let state = app.state::<AppState>();
-    if let Ok(current) = state.current_shortcut.lock() {
-        if let Some(old_shortcut_str) = current.as_ref() {
-            if let Ok(old_shortcut) = old_shortcut_str.parse::<Shortcut>() {
-                let _ = app.global_shortcut().unregister(old_shortcut);
+    {
+        let state = app.state::<AppState>();
+        if let Ok(current) = state.current_shortcut.lock() {
+            if let Some(old_shortcut_str) = current.as_ref() {
+                if let Ok(old_shortcut) = old_shortcut_str.parse::<Shortcut>() {
+                    let _ = app.global_shortcut().unregister(old_shortcut);
+                }
             }
-        }
+        };
     }
 
     // 解析並註冊新的快捷鍵
@@ -52,23 +82,58 @@ fn register_shortcut(app: tauri::AppHandle, shortcut_str: String) -> Result<(), 
         .on_shortcut(shortcut.clone(), move |_app, _shortcut, event| {
             // 只在按鍵釋放時觸發（避免重複觸發）
             if event.state == ShortcutState::Released {
-                if let Some(window) = app_clone.get_webview_window("main") {
-                    let _ = window.is_visible().map(|visible| {
-                        if visible {
-                            let _ = window.hide();
-                        } else {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    });
+                // 檢查主視窗的可見狀態作為參考
+                let should_hide = if let Some(main_window) = app_clone.get_webview_window("main") {
+                    main_window.is_visible().unwrap_or(false)
+                } else {
+                    false
+                };
+
+                // 切換主視窗
+                if let Some(main_window) = app_clone.get_webview_window("main") {
+                    if should_hide {
+                        let _ = main_window.hide();
+                    } else {
+                        let _ = main_window.show();
+                        let _ = main_window.set_focus();
+                    }
                 }
+
+                // 切換所有便利貼視窗
+                {
+                    let state = app_clone.state::<AppState>();
+                    if let Ok(mut sticky_notes) = state.sticky_notes.lock() {
+                        let note_ids: Vec<String> = sticky_notes.keys().cloned().collect();
+
+                        for note_id in note_ids {
+                            if let Some(window) = app_clone.get_webview_window(&note_id) {
+                                if should_hide {
+                                    let _ = window.hide();
+                                } else {
+                                    let _ = window.show();
+                                }
+                            }
+
+                            // 更新可見狀態
+                            if let Some(note) = sticky_notes.get_mut(&note_id) {
+                                note.is_visible = !should_hide;
+                            }
+                        }
+                    };
+                }
+
+                // 持久化便利貼狀態
+                let _ = save_sticky_notes_from_state(&app_clone);
             }
         })
         .map_err(|e| format!("無法註冊快捷鍵: {}", e))?;
 
     // 儲存當前快捷鍵
-    if let Ok(mut current) = state.current_shortcut.lock() {
-        *current = Some(shortcut_str);
+    {
+        let state = app.state::<AppState>();
+        if let Ok(mut current) = state.current_shortcut.lock() {
+            *current = Some(shortcut_str);
+        };
     }
 
     Ok(())
@@ -154,6 +219,72 @@ fn get_archive_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
         .map_err(|e| format!("無法建立資料目錄: {}", e))?;
 
     Ok(app_data_dir.join("archive.json"))
+}
+
+// 取得便利貼資料檔案路徑
+fn get_sticky_notes_path(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("無法取得應用程式資料目錄: {}", e))?;
+
+    fs::create_dir_all(&app_data_dir)
+        .map_err(|e| format!("無法建立資料目錄: {}", e))?;
+
+    Ok(app_data_dir.join("sticky_notes.json"))
+}
+
+// 讀取所有便利貼資料
+fn read_sticky_notes(app_handle: &tauri::AppHandle) -> Result<HashMap<String, StickyNote>, String> {
+    let notes_path = get_sticky_notes_path(app_handle)?;
+
+    if notes_path.exists() {
+        let content = fs::read_to_string(&notes_path)
+            .map_err(|e| format!("無法讀取便利貼資料: {}", e))?;
+
+        let notes: HashMap<String, StickyNote> = serde_json::from_str(&content)
+            .unwrap_or_else(|_| HashMap::new());
+
+        Ok(notes)
+    } else {
+        Ok(HashMap::new())
+    }
+}
+
+// 寫入所有便利貼資料
+fn write_sticky_notes(app_handle: &tauri::AppHandle, notes: &HashMap<String, StickyNote>) -> Result<(), String> {
+    let notes_path = get_sticky_notes_path(app_handle)?;
+
+    let json = serde_json::to_string_pretty(notes)
+        .map_err(|e| format!("無法序列化便利貼資料: {}", e))?;
+
+    fs::write(&notes_path, json)
+        .map_err(|e| format!("無法寫入便利貼資料: {}", e))
+}
+
+// 載入所有便利貼到記憶體
+fn load_sticky_notes_to_state(app_handle: &tauri::AppHandle) -> Result<(), String> {
+    let notes = read_sticky_notes(app_handle)?;
+    let state = app_handle.state::<AppState>();
+
+    if let Ok(mut sticky_notes) = state.sticky_notes.lock() {
+        *sticky_notes = notes;
+    }
+
+    Ok(())
+}
+
+// 從記憶體保存所有便利貼到檔案
+fn save_sticky_notes_from_state(app_handle: &tauri::AppHandle) -> Result<(), String> {
+    let state = app_handle.state::<AppState>();
+
+    let notes = if let Ok(sticky_notes) = state.sticky_notes.lock() {
+        sticky_notes.clone()
+    } else {
+        return Err("無法鎖定便利貼狀態".to_string());
+    };
+
+    write_sticky_notes(app_handle, &notes)
 }
 
 // 讀取歷史記錄
@@ -580,13 +711,229 @@ fn create_new_memo(app: tauri::AppHandle) -> Result<String, String> {
     Ok(new_id)
 }
 
+// 創建新的便利貼視窗
+#[tauri::command]
+fn create_sticky_note(
+    app: tauri::AppHandle,
+    x: Option<i32>,
+    y: Option<i32>,
+    color: Option<String>,
+) -> Result<String, String> {
+    // 生成新的 ID
+    let note_id = format!("sticky_{}", get_timestamp());
+    let current_time = get_timestamp();
+
+    // 計算視窗位置（如果沒有指定，則使用預設位置加上偏移）
+    let state = app.state::<AppState>();
+    let note_count = if let Ok(sticky_notes) = state.sticky_notes.lock() {
+        sticky_notes.len()
+    } else {
+        0
+    };
+
+    let offset = (note_count as i32 * 30) % 300; // 每個新視窗偏移 30px，最多偏移 300px
+    let position = Position {
+        x: x.unwrap_or(100 + offset),
+        y: y.unwrap_or(100 + offset),
+    };
+
+    // 建立新的便利貼資料
+    let sticky_note = StickyNote {
+        id: note_id.clone(),
+        content: String::new(),
+        position: position.clone(),
+        size: Size {
+            width: 350,
+            height: 250,
+        },
+        color: color.unwrap_or_else(|| "yellow".to_string()),
+        opacity: 100,
+        created_at: current_time,
+        updated_at: current_time,
+        is_visible: true,
+    };
+
+    // 儲存到狀態
+    if let Ok(mut sticky_notes) = state.sticky_notes.lock() {
+        sticky_notes.insert(note_id.clone(), sticky_note.clone());
+    }
+
+    // 持久化到檔案
+    save_sticky_notes_from_state(&app)?;
+
+    // 創建新視窗
+    use tauri::WebviewWindowBuilder;
+    use tauri::WebviewUrl;
+
+    let window = WebviewWindowBuilder::new(
+        &app,
+        note_id.clone(),
+        WebviewUrl::App("index.html".into())
+    )
+    .title(&format!("UpMemo - {}", note_id))
+    .inner_size(sticky_note.size.width as f64, sticky_note.size.height as f64)
+    .position(sticky_note.position.x as f64, sticky_note.position.y as f64)
+    .decorations(false)
+    .always_on_top(true)
+    .transparent(true)
+    .skip_taskbar(true)
+    .build()
+    .map_err(|e| format!("無法創建視窗: {}", e))?;
+
+    window.show().map_err(|e| format!("無法顯示視窗: {}", e))?;
+
+    Ok(note_id)
+}
+
+// 獲取所有便利貼
+#[tauri::command]
+fn get_all_sticky_notes(app: tauri::AppHandle) -> Result<Vec<StickyNote>, String> {
+    let state = app.state::<AppState>();
+
+    let notes = if let Ok(sticky_notes) = state.sticky_notes.lock() {
+        sticky_notes.values().cloned().collect()
+    } else {
+        Vec::new()
+    };
+
+    Ok(notes)
+}
+
+// 更新便利貼資料
+#[tauri::command]
+fn update_sticky_note(
+    app: tauri::AppHandle,
+    note_id: String,
+    content: Option<String>,
+    position: Option<Position>,
+    size: Option<Size>,
+    color: Option<String>,
+    opacity: Option<u32>,
+) -> Result<(), String> {
+    let state = app.state::<AppState>();
+
+    if let Ok(mut sticky_notes) = state.sticky_notes.lock() {
+        if let Some(note) = sticky_notes.get_mut(&note_id) {
+            // 更新欄位
+            if let Some(c) = content {
+                note.content = c;
+            }
+            if let Some(p) = position {
+                note.position = p;
+            }
+            if let Some(s) = size {
+                note.size = s;
+            }
+            if let Some(col) = color {
+                note.color = col;
+            }
+            if let Some(op) = opacity {
+                note.opacity = op;
+            }
+
+            // 更新時間戳
+            note.updated_at = get_timestamp();
+        } else {
+            return Err(format!("找不到便利貼: {}", note_id));
+        }
+    } else {
+        return Err("無法鎖定便利貼狀態".to_string());
+    }
+
+    // 持久化到檔案
+    save_sticky_notes_from_state(&app)?;
+
+    Ok(())
+}
+
+// 關閉便利貼視窗（但保留資料）
+#[tauri::command]
+fn close_sticky_note(app: tauri::AppHandle, note_id: String) -> Result<(), String> {
+    // 更新可見狀態
+    let state = app.state::<AppState>();
+    if let Ok(mut sticky_notes) = state.sticky_notes.lock() {
+        if let Some(note) = sticky_notes.get_mut(&note_id) {
+            note.is_visible = false;
+        }
+    }
+
+    // 持久化到檔案
+    save_sticky_notes_from_state(&app)?;
+
+    // 關閉視窗
+    if let Some(window) = app.get_webview_window(&note_id) {
+        window.close().map_err(|e| format!("無法關閉視窗: {}", e))?;
+    }
+
+    Ok(())
+}
+
+// 刪除便利貼（包括資料和視窗）
+#[tauri::command]
+fn delete_sticky_note(app: tauri::AppHandle, note_id: String) -> Result<(), String> {
+    // 從狀態中移除
+    let state = app.state::<AppState>();
+    if let Ok(mut sticky_notes) = state.sticky_notes.lock() {
+        sticky_notes.remove(&note_id);
+    }
+
+    // 持久化到檔案
+    save_sticky_notes_from_state(&app)?;
+
+    // 關閉視窗
+    if let Some(window) = app.get_webview_window(&note_id) {
+        window.close().map_err(|e| format!("無法關閉視窗: {}", e))?;
+    }
+
+    Ok(())
+}
+
+// 顯示/隱藏所有便利貼
+#[tauri::command]
+fn toggle_all_sticky_notes(app: tauri::AppHandle, visible: bool) -> Result<(), String> {
+    let state = app.state::<AppState>();
+
+    // 獲取所有便利貼 ID
+    let note_ids: Vec<String> = if let Ok(sticky_notes) = state.sticky_notes.lock() {
+        sticky_notes.keys().cloned().collect()
+    } else {
+        return Err("無法鎖定便利貼狀態".to_string());
+    };
+
+    // 顯示或隱藏每個視窗
+    for note_id in note_ids {
+        if let Some(window) = app.get_webview_window(&note_id) {
+            if visible {
+                let _ = window.show();
+                let _ = window.set_focus();
+            } else {
+                let _ = window.hide();
+            }
+        }
+
+        // 更新可見狀態
+        if let Ok(mut sticky_notes) = state.sticky_notes.lock() {
+            if let Some(note) = sticky_notes.get_mut(&note_id) {
+                note.is_visible = visible;
+            }
+        }
+    }
+
+    // 持久化到檔案
+    save_sticky_notes_from_state(&app)?;
+
+    Ok(())
+}
+
 fn main() {
   tauri::Builder::default()
     .plugin(tauri_plugin_global_shortcut::Builder::new().build())
     .plugin(tauri_plugin_store::Builder::new().build())
+    .plugin(tauri_plugin_shell::init())
     .manage(AppState {
       current_shortcut: Mutex::new(None),
       current_memo_id: Mutex::new(None),
+      sticky_notes: Mutex::new(HashMap::new()),
     })
     .invoke_handler(tauri::generate_handler![
       load_note,
@@ -610,7 +957,13 @@ fn main() {
       save_font_config,
       get_system_fonts,
       get_current_memo_id,
-      create_new_memo
+      create_new_memo,
+      create_sticky_note,
+      get_all_sticky_notes,
+      update_sticky_note,
+      close_sticky_note,
+      delete_sticky_note,
+      toggle_all_sticky_notes
     ])
     .setup(|app| {
       // 創建托盤選單
@@ -627,16 +980,48 @@ fn main() {
         .on_menu_event(|app, event| {
           match event.id().as_ref() {
             "show" => {
-              if let Some(window) = app.get_webview_window("main") {
-                let _ = window.is_visible().map(|visible| {
-                  if visible {
-                    let _ = window.hide();
-                  } else {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                  }
-                });
+              // 檢查主視窗的可見狀態作為參考
+              let should_hide = if let Some(main_window) = app.get_webview_window("main") {
+                main_window.is_visible().unwrap_or(false)
+              } else {
+                false
+              };
+
+              // 切換主視窗
+              if let Some(main_window) = app.get_webview_window("main") {
+                if should_hide {
+                  let _ = main_window.hide();
+                } else {
+                  let _ = main_window.show();
+                  let _ = main_window.set_focus();
+                }
               }
+
+              // 切換所有便利貼視窗
+              {
+                let state = app.state::<AppState>();
+                if let Ok(mut sticky_notes) = state.sticky_notes.lock() {
+                  let note_ids: Vec<String> = sticky_notes.keys().cloned().collect();
+
+                  for note_id in note_ids {
+                    if let Some(window) = app.get_webview_window(&note_id) {
+                      if should_hide {
+                        let _ = window.hide();
+                      } else {
+                        let _ = window.show();
+                      }
+                    }
+
+                    // 更新可見狀態
+                    if let Some(note) = sticky_notes.get_mut(&note_id) {
+                      note.is_visible = !should_hide;
+                    }
+                  }
+                };
+              }
+
+              // 持久化便利貼狀態
+              let _ = save_sticky_notes_from_state(app);
             }
             "new_memo" => {
               if let Some(window) = app.get_webview_window("main") {
@@ -653,26 +1038,93 @@ fn main() {
           }
         })
         .on_tray_icon_event(|tray, event| {
-          // 左鍵點擊托盤圖示 -> 切換視窗顯示/隱藏
+          // 左鍵點擊托盤圖示 -> 切換所有視窗顯示/隱藏
           if let tauri::tray::TrayIconEvent::Click { button, button_state, .. } = event {
             if button == MouseButton::Left && button_state == MouseButtonState::Up {
               let app = tray.app_handle();
-              if let Some(window) = app.get_webview_window("main") {
-                let _ = window.is_visible().map(|visible| {
-                  if visible {
-                    let _ = window.hide();
-                  } else {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                  }
-                });
+
+              // 檢查主視窗的可見狀態作為參考
+              let should_hide = if let Some(main_window) = app.get_webview_window("main") {
+                main_window.is_visible().unwrap_or(false)
+              } else {
+                false
+              };
+
+              // 切換主視窗
+              if let Some(main_window) = app.get_webview_window("main") {
+                if should_hide {
+                  let _ = main_window.hide();
+                } else {
+                  let _ = main_window.show();
+                  let _ = main_window.set_focus();
+                }
               }
+
+              // 切換所有便利貼視窗
+              {
+                let state = app.state::<AppState>();
+                if let Ok(mut sticky_notes) = state.sticky_notes.lock() {
+                  let note_ids: Vec<String> = sticky_notes.keys().cloned().collect();
+
+                  for note_id in note_ids {
+                    if let Some(window) = app.get_webview_window(&note_id) {
+                      if should_hide {
+                        let _ = window.hide();
+                      } else {
+                        let _ = window.show();
+                      }
+                    }
+
+                    // 更新可見狀態
+                    if let Some(note) = sticky_notes.get_mut(&note_id) {
+                      note.is_visible = !should_hide;
+                    }
+                  }
+                };
+              }
+
+              // 持久化便利貼狀態
+              let _ = save_sticky_notes_from_state(app);
             }
           }
         })
         .build(app)?;
 
-      // 顯示視窗
+      // 載入便利貼資料
+      let app_handle = app.handle().clone();
+      if let Err(e) = load_sticky_notes_to_state(&app_handle) {
+        eprintln!("載入便利貼資料失敗: {}", e);
+      }
+
+      // 恢復所有便利貼視窗
+      let state = app_handle.state::<AppState>();
+      let notes_to_restore: Vec<StickyNote> = if let Ok(sticky_notes) = state.sticky_notes.lock() {
+        sticky_notes.values().filter(|note| note.is_visible).cloned().collect()
+      } else {
+        Vec::new()
+      };
+
+      for note in notes_to_restore {
+        use tauri::WebviewWindowBuilder;
+        use tauri::WebviewUrl;
+
+        let _ = WebviewWindowBuilder::new(
+          &app_handle,
+          note.id.clone(),
+          WebviewUrl::App("index.html".into())
+        )
+        .title(&format!("UpMemo - {}", note.id))
+        .inner_size(note.size.width as f64, note.size.height as f64)
+        .position(note.position.x as f64, note.position.y as f64)
+        .decorations(false)
+        .always_on_top(true)
+        .transparent(true)
+        .skip_taskbar(true)
+        .build()
+        .and_then(|window| window.show());
+      }
+
+      // 顯示主視窗
       let window = app.get_webview_window("main").unwrap();
       window.show().unwrap();
 

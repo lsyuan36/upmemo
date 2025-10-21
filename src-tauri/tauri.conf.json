@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schemas/2.0.0/tauri-app.schema.json",
   "productName": "upmemo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "identifier": "com.tauri.upmemo",
   "build": {
     "beforeBuildCommand": "npm run build",
@@ -18,7 +18,7 @@
         "decorations": false,
         "alwaysOnTop": true,
         "visible": false,
-        "dragDropEnabled": false,
+        "dragDropEnabled": true,
         "transparent": true,
         "skipTaskbar": true
       }
@@ -35,7 +35,36 @@
             "core:window:allow-show",
             "core:window:allow-hide",
             "core:window:allow-set-focus",
-            "core:window:allow-is-visible"
+            "core:window:allow-is-visible",
+            "shell:allow-open",
+            "store:allow-load",
+            "store:allow-save",
+            "store:allow-get",
+            "store:allow-set",
+            "store:allow-delete",
+            "store:allow-clear",
+            "store:default"
+          ]
+        },
+        {
+          "identifier": "sticky-note-capability",
+          "windows": ["sticky_*"],
+          "permissions": [
+            "core:default",
+            "core:window:allow-start-dragging",
+            "core:window:allow-show",
+            "core:window:allow-hide",
+            "core:window:allow-set-focus",
+            "core:window:allow-is-visible",
+            "core:window:allow-close",
+            "shell:allow-open",
+            "store:allow-load",
+            "store:allow-save",
+            "store:allow-get",
+            "store:allow-set",
+            "store:allow-delete",
+            "store:allow-clear",
+            "store:default"
           ]
         }
       ]

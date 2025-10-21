@@ -1,5 +1,5 @@
 // DOM 元素引用
-export const textarea = document.getElementById("note-content") as HTMLTextAreaElement;
+export const noteDisplay = document.getElementById("note-display") as HTMLDivElement;
 export const newMemoBtn = document.getElementById("new-memo-btn");
 export const historyBtn = document.getElementById("history-btn");
 export const archiveBtn = document.getElementById("archive-btn");

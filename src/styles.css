@@ -78,18 +78,99 @@ body {
 }
 
 /* 筆記內容區 */
-#note-content {
+.note-container {
   flex: 1;
   width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.note-display {
+  width: 100%;
+  height: 100%;
   border: none;
   outline: none;
   background-color: transparent;
-  resize: none;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 14px;
   color: #333;
   padding: 10px;
   box-sizing: border-box;
+  overflow-y: auto;
+  word-wrap: break-word;
+}
+
+.note-display a {
+  color: #0066cc;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.note-display a:hover {
+  color: #0052a3;
+  text-decoration: none;
+}
+
+/* 圖片容器樣式 */
+.note-display .image-container {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin: 10px 0;
+  user-select: none;
+}
+
+/* 插入的圖片樣式 */
+.note-display .inserted-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.note-display .image-container:hover .inserted-image {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 調整大小控制點 */
+.note-display .resize-handle {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 15px;
+  height: 15px;
+  background: #0066cc;
+  cursor: nwse-resize;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+.note-display .image-container:hover .resize-handle {
+  opacity: 0.8;
+}
+
+.note-display .resize-handle:hover {
+  opacity: 1 !important;
+  transform: scale(1.2);
+}
+
+/* 選取圖片容器時的外觀 */
+.note-display .image-container.selected {
+  outline: 2px solid #3399ff;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* 圖片拖放時的視覺提示 */
+.note-display.dragover {
+  background-color: rgba(0, 102, 204, 0.05);
+  border: 2px dashed #0066cc;
 }
 
 /* 歷史記錄面板 */

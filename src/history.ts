@@ -1,8 +1,9 @@
 import type { MemoEntry } from "./types";
 import { getHistory, loadHistoryItem as loadHistoryItemAPI, deleteHistoryItem as deleteHistoryItemAPI, archiveHistoryItem as archiveHistoryItemAPI } from "./api";
-import { historyPanel, historyList, historyBtn, closeHistoryBtn, textarea } from "./dom";
+import { historyPanel, historyList, historyBtn, closeHistoryBtn, noteDisplay } from "./dom";
 import { escapeHtml, formatTimestamp } from "./utils";
 import { saveNote } from "./api";
+import { linkifyText } from "./linkify";
 
 // 顯示歷史記錄面板
 export async function showHistory(): Promise<void> {
@@ -87,8 +88,9 @@ function renderHistory(history: MemoEntry[]): void {
 async function loadHistoryItem(id: string): Promise<void> {
   try {
     const content = await loadHistoryItemAPI(id);
-    if (textarea) {
-      textarea.value = content;
+    if (noteDisplay) {
+      const linkedContent = linkifyText(content);
+      noteDisplay.innerHTML = linkedContent;
       await saveNote(content);
     }
     hideHistory();

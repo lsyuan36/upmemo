@@ -1,6 +1,6 @@
 import { COLOR_THEMES, DEFAULT_COLOR } from "./constants";
 import { loadColorTheme, saveColorTheme as saveColorThemeToStorage, loadOpacity as loadOpacityFromStorage, saveOpacity as saveOpacityToStorage } from "./storage";
-import { textarea, opacitySlider, opacityValue } from "./dom";
+import { opacitySlider, opacityValue } from "./dom";
 import { hexToRgba } from "./utils";
 
 let currentColor: string = DEFAULT_COLOR;
@@ -89,8 +89,9 @@ export function applyOpacity(): void {
   const theme = COLOR_THEMES[currentColor];
   if (!theme) return;
 
-  if (textarea) {
-    textarea.style.backgroundColor = hexToRgba(theme.bg, alpha);
+  const container = document.querySelector('.container') as HTMLElement;
+  if (container) {
+    container.style.backgroundColor = hexToRgba(theme.bg, alpha);
   }
 
   console.log(`已應用透明度: ${currentOpacity}%`);
