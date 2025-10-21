@@ -1,4 +1,4 @@
-import { listen } from "@tauri-apps/api/event";
+// import { listen } from "@tauri-apps/api/event"; // 已停用多視窗功能
 import { loadNote, saveNote, saveNoteToHistory, createNewMemo } from "./api";
 import { noteDisplay, newMemoBtn } from "./dom";
 import { initStore } from "./storage";
@@ -10,7 +10,7 @@ import { setupArchiveListeners } from "./archive";
 import { setupTrashListeners } from "./trash";
 import { setupSettingsListeners } from "./settings";
 import { linkifyText, extractPlainText, handleLinkClick } from "./linkify";
-import { createStickyNote, isStickyNoteWindow, getCurrentWindowLabel, updateStickyNote, getAllStickyNotes, closeStickyNote } from "./stickyNotes";
+// import { createStickyNote, isStickyNoteWindow, getCurrentWindowLabel, updateStickyNote, getAllStickyNotes, closeStickyNote } from "./stickyNotes"; // 已停用多視窗功能
 import { setupImageListeners } from "./image";
 
 console.log("Frontend script loaded!");
