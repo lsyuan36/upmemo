@@ -1,5 +1,5 @@
 import { listen } from "@tauri-apps/api/event";
-import { loadNote, saveNote, saveNoteToHistory } from "./api";
+import { loadNote, saveNote, saveNoteToHistory, createNewMemo } from "./api";
 import { noteDisplay, newMemoBtn } from "./dom";
 import { initStore } from "./storage";
 import { initTheme, setupColorListeners } from "./theme";
@@ -35,73 +35,14 @@ async function initializeApp() {
     console.error("Store 初始化失敗:", error);
   }
 
-  // 檢查當前視窗是否為便利貼視窗
-  const isSticky = isStickyNoteWindow();
-  const currentWindowLabel = getCurrentWindowLabel();
-
-  console.log(`當前視窗 label: ${currentWindowLabel}, 是否為便利貼: ${isSticky}`);
-
-  // 如果是便利貼視窗，在控制列添加關閉按鈕
-  if (isSticky) {
-    const controlBar = document.querySelector('.control-bar');
-    const spacer = document.querySelector('.spacer');
-
-    if (controlBar && spacer) {
-      // 創建關閉按鈕
-      const closeBtn = document.createElement('button');
-      closeBtn.id = 'close-sticky-btn';
-      closeBtn.className = 'control-btn close-sticky-btn';
-      closeBtn.title = '關閉此便利貼';
-      closeBtn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
-        </svg>
-      `;
-
-      // 插入到 spacer 之前
-      controlBar.insertBefore(closeBtn, spacer);
-
-      // 添加點擊事件
-      closeBtn.addEventListener('click', async () => {
-        try {
-          await closeStickyNote(currentWindowLabel);
-          console.log(`已關閉便利貼: ${currentWindowLabel}`);
-        } catch (error) {
-          console.error('關閉便利貼失敗:', error);
-        }
-      });
-
-      console.log('已添加關閉便利貼按鈕');
-    }
-  }
-
-  // 載入筆記內容
-  if (isSticky) {
-    // 便利貼視窗：從便利貼資料載入
-    try {
-      const allNotes = await getAllStickyNotes();
-      const currentNote = allNotes.find(note => note.id === currentWindowLabel);
-
-      if (currentNote) {
-        const linkedContent = linkifyText(currentNote.content);
-        noteDisplay.innerHTML = linkedContent;
-        console.log(`便利貼 ${currentWindowLabel} 資料載入成功`);
-      } else {
-        console.log(`便利貼 ${currentWindowLabel} 無資料，顯示空白`);
-      }
-    } catch (error) {
-      console.error("載入便利貼資料失敗:", error);
-    }
-  } else {
-    // 主視窗：從 note.txt 載入
-    try {
-      const content = await loadNote();
-      const linkedContent = linkifyText(content);
-      noteDisplay.innerHTML = linkedContent;
-      console.log("主視窗筆記載入成功");
-    } catch (error) {
-      console.error("載入筆記失敗:", error);
-    }
+  // 載入筆記內容（只有主視窗，已停用多視窗功能）
+  try {
+    const content = await loadNote();
+    const linkedContent = linkifyText(content);
+    noteDisplay.innerHTML = linkedContent;
+    console.log("主視窗筆記載入成功");
+  } catch (error) {
+    console.error("載入筆記失敗:", error);
   }
 
   // 監聽輸入事件，自動轉換網址並儲存
@@ -157,18 +98,11 @@ async function initializeApp() {
     saveTimeout = window.setTimeout(async () => {
       console.log("執行自動儲存，內容長度:", plainText.length);
 
-      // 根據視窗類型儲存
-      if (isSticky) {
-        // 便利貼視窗：更新便利貼資料
-        await updateStickyNote(currentWindowLabel, plainText);
-        console.log(`便利貼 ${currentWindowLabel} 資料已更新`);
+      // 主視窗：儲存到 note.txt 和歷史
+      if (plainText.trim()) {
+        await saveNoteToHistory(plainText);
       } else {
-        // 主視窗：儲存到 note.txt 和歷史
-        if (plainText.trim()) {
-          await saveNoteToHistory(plainText);
-        } else {
-          await saveNote(plainText);
-        }
+        await saveNote(plainText);
       }
     }, 500);
   });
@@ -298,22 +232,28 @@ async function initializeApp() {
 
   console.log("✅ 所有監聽器設置完成!");
 
-  // 新增便條按鈕事件
+  // 新增便條按鈕事件（在主視窗清空並開始新便條）
   newMemoBtn?.addEventListener("click", async () => {
     try {
-      // 創建新的便利貼視窗
-      const newId = await createStickyNote();
-      console.log(`已建立新便利貼視窗，ID: ${newId}`);
+      // 創建新的便條（清空主視窗內容）
+      const newId = await createNewMemo();
+      noteDisplay.innerHTML = "";
+      console.log(`已建立新便條，ID: ${newId}`);
     } catch (error) {
-      console.error("建立新便利貼失敗:", error);
+      console.error("建立新便條失敗:", error);
     }
   });
 
-  // 監聽系統托盤的新增便條事件
-  listen("tray-new-memo", async () => {
-    console.log("收到系統托盤新增便條事件");
-    newMemoBtn?.click();
-  });
+  // 監聽系統托盤的新增便利貼視窗事件（已停用）
+  // listen("tray-new-sticky-window", async () => {
+  //   console.log("收到系統托盤新增便利貼視窗事件");
+  //   try {
+  //     const newId = await createStickyNote();
+  //     console.log(`已從系統托盤建立新便利貼視窗，ID: ${newId}`);
+  //   } catch (error) {
+  //     console.error("建立新便利貼視窗失敗:", error);
+  //   }
+  // });
 }
 
 // 啟動應用程式
