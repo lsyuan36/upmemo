@@ -304,7 +304,7 @@ function setupDragAndDrop() {
 async function createImagePreview(imageSrc: string) {
   try {
     const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-    const { availableMonitors, currentMonitor } = await import('@tauri-apps/api/window');
+    const { currentMonitor } = await import('@tauri-apps/api/window');
     const { emit } = await import('@tauri-apps/api/event');
 
     // 獲取當前螢幕資訊
