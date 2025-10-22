@@ -1,7 +1,7 @@
 // 網址自動轉換為超連結功能
 
-// URL 匹配的正則表達式
-const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+// URL 匹配的正則表達式 (支援 http://, https://, www.)
+const URL_REGEX = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
 
 /**
  * 將文本中的網址轉換為可點擊的超連結
@@ -97,7 +97,9 @@ export function linkifyText(text: string): string {
 
     // 替換網址為超連結
     const withLinks = escaped.replace(URL_REGEX, (url) => {
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+      // 如果是 www. 開頭,自動添加 https://
+      const href = url.startsWith('www.') ? `https://${url}` : url;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`;
     });
 
     return withLinks;

@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schemas/2.0.0/tauri-app.schema.json",
   "productName": "upmemo",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "identifier": "com.tauri.upmemo",
   "build": {
     "beforeBuildCommand": "npm run build",
@@ -36,6 +36,11 @@
             "core:window:allow-hide",
             "core:window:allow-set-focus",
             "core:window:allow-is-visible",
+            "core:window:allow-current-monitor",
+            "core:window:allow-available-monitors",
+            "core:webview:allow-create-webview-window",
+            "core:event:allow-emit",
+            "core:event:allow-listen",
             "shell:allow-open",
             "store:allow-load",
             "store:allow-save",
@@ -65,6 +70,19 @@
             "store:allow-delete",
             "store:allow-clear",
             "store:default"
+          ]
+        },
+        {
+          "identifier": "image-preview-capability",
+          "windows": ["image-preview"],
+          "permissions": [
+            "core:default",
+            "core:window:allow-close",
+            "core:window:allow-show",
+            "core:window:allow-set-focus",
+            "core:window:allow-set-fullscreen",
+            "core:event:allow-listen",
+            "core:event:allow-emit"
           ]
         }
       ]

@@ -64,6 +64,14 @@ async function initializeApp() {
         clearTimeout(linkifyTimeout);
       }
       linkifyTimeout = window.setTimeout(() => {
+        // 檢查是否包含網址 (支援 http://, https://, www.)
+        const hasUrl = /(https?:\/\/[^\s]+|www\.[^\s]+)/.test(plainText);
+
+        // 只有在包含網址時才進行 linkify 轉換
+        if (!hasUrl) {
+          return;
+        }
+
         const linkedContent = linkifyText(plainText);
 
         // 只在內容真的改變時才更新
@@ -88,7 +96,7 @@ async function initializeApp() {
             restoreCursorPosition(noteDisplay, cursorOffset);
           }
         }
-      }, 1000); // 1秒後才轉換連結
+      }, 2000); // 延長至 2 秒後才轉換連結,避免干擾正常輸入
     }
 
     // 延遲儲存

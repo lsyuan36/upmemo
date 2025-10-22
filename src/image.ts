@@ -298,7 +298,67 @@ function setupDragAndDrop() {
   noteDisplay.addEventListener("drop", onDrop);
 }
 
-// 點選圖片容器以選取 + Delete/Backspace 刪除
+/**
+ * 創建圖片預覽視窗 (使用 Tauri 全螢幕視窗)
+ */
+async function createImagePreview(imageSrc: string) {
+  try {
+    const { WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+    const { availableMonitors, currentMonitor } = await import('@tauri-apps/api/window');
+    const { emit } = await import('@tauri-apps/api/event');
+
+    // 獲取當前螢幕資訊
+    const monitor = await currentMonitor();
+    if (!monitor) {
+      console.error('無法獲取螢幕資訊');
+      return;
+    }
+
+    console.log('準備創建預覽視窗,圖片數據長度:', imageSrc.length);
+
+    // 創建全螢幕預覽視窗 (初始隱藏以避免閃爍)
+    const previewWindow = new WebviewWindow('image-preview', {
+      url: '/preview.html',
+      title: '圖片預覽',
+      width: monitor.size.width,
+      height: monitor.size.height,
+      x: monitor.position.x,
+      y: monitor.position.y,
+      decorations: false,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      transparent: true,
+      resizable: false,
+      fullscreen: true,
+      focus: true,
+      visible: false,  // 初始隱藏
+    });
+
+    // 監聽視窗載入完成後發送圖片數據
+    previewWindow.once('tauri://created', async () => {
+      console.log('預覽視窗已創建,準備發送圖片數據');
+      // 等待較長時間確保視窗完全初始化並載入 JavaScript
+      setTimeout(async () => {
+        try {
+          console.log('開始發送圖片數據事件...');
+          await emit('preview-image-data', { data: imageSrc });
+          console.log('圖片數據已發送!事件名稱: preview-image-data');
+        } catch (error) {
+          console.error('發送圖片數據失敗:', error);
+        }
+      }, 500);
+    });
+
+    previewWindow.once('tauri://error', (e) => {
+      console.error('預覽視窗創建失敗:', e);
+    });
+
+  } catch (error) {
+    console.error('創建預覽視窗失敗:', error);
+  }
+}
+
+// 點選圖片容器以選取 + Delete/Backspace 刪除 + 雙擊預覽
 function setupSelectionAndDelete() {
   let selected: HTMLElement | null = null;
 
@@ -309,6 +369,7 @@ function setupSelectionAndDelete() {
     }
   }
 
+  // 單擊選取
   noteDisplay.addEventListener("click", (e) => {
     const target = e.target as HTMLElement;
     const container = target.closest('.image-container') as HTMLElement | null;
@@ -321,6 +382,18 @@ function setupSelectionAndDelete() {
     }
   });
 
+  // 雙擊圖片顯示預覽
+  noteDisplay.addEventListener("dblclick", (e) => {
+    const target = e.target as HTMLElement;
+    const img = target.closest('.inserted-image') as HTMLImageElement | null;
+    if (img && img.src) {
+      e.preventDefault();
+      e.stopPropagation();
+      createImagePreview(img.src);
+    }
+  });
+
+  // 刪除選中的圖片
   noteDisplay.addEventListener("keydown", (e: KeyboardEvent) => {
     if (!selected) return;
     if (e.key === "Delete" || e.key === "Backspace") {

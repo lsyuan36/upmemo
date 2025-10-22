@@ -18,5 +18,12 @@ export default defineConfig({
   build: {
     outDir: "../dist",
     emptyOutDir: true,
+    // 配置多頁面應用
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'src/index.html'),
+        preview: path.resolve(__dirname, 'src/preview.html'),
+      },
+    },
   },
 });
