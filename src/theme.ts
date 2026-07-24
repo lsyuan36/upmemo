@@ -2,6 +2,7 @@ import { COLOR_THEMES, DEFAULT_COLOR } from "./constants";
 import { loadColorTheme, saveColorTheme as saveColorThemeToStorage, loadOpacity as loadOpacityFromStorage, saveOpacity as saveOpacityToStorage } from "./storage";
 import { opacitySlider, opacityValue } from "./dom";
 import { hexToRgba } from "./utils";
+import { logError, logInfo } from "./logger";
 
 let currentColor: string = DEFAULT_COLOR;
 let currentOpacity: number = 100;
@@ -35,7 +36,9 @@ export function initTheme(): void {
 
 export function saveAndApplyColorTheme(color: string): void {
   applyColorTheme(color);
-  saveColorThemeToStorage(color);
+  void saveColorThemeToStorage(color).catch((error: unknown) => {
+    logError("儲存配色失敗:", error);
+  });
 }
 
 export function applyColorTheme(color: string): void {
@@ -45,17 +48,17 @@ export function applyColorTheme(color: string): void {
   currentColor = color;
 
   // 更新控制列的背景
-  const controlBar = document.querySelector(".control-bar") as HTMLElement;
+  const controlBar = document.querySelector<HTMLElement>(".control-bar");
   if (controlBar) {
     controlBar.style.background = theme.headerBg;
     controlBar.style.borderBottomColor = theme.border;
   }
 
   // 更新其他面板的背景
-  const historyPanel = document.querySelector(".history-panel") as HTMLElement;
-  const archivePanel = document.querySelector(".archive-panel") as HTMLElement;
-  const trashPanel = document.querySelector(".trash-panel") as HTMLElement;
-  const settingsPanel = document.querySelector(".settings-panel") as HTMLElement;
+  const historyPanel = document.querySelector<HTMLElement>(".history-panel");
+  const archivePanel = document.querySelector<HTMLElement>(".archive-panel");
+  const trashPanel = document.querySelector<HTMLElement>(".trash-panel");
+  const settingsPanel = document.querySelector<HTMLElement>(".settings-panel");
 
   if (historyPanel) historyPanel.style.backgroundColor = theme.bg;
   if (archivePanel) archivePanel.style.backgroundColor = theme.bg;
@@ -63,15 +66,15 @@ export function applyColorTheme(color: string): void {
   if (settingsPanel) settingsPanel.style.backgroundColor = theme.bg;
 
   // 更新標題列
-  const headers = document.querySelectorAll(".history-header, .archive-header, .trash-header, .settings-header");
+  const headers = document.querySelectorAll<HTMLElement>(".history-header, .archive-header, .trash-header, .settings-header");
   headers.forEach((header) => {
-    (header as HTMLElement).style.background = theme.headerBg;
-    (header as HTMLElement).style.borderBottomColor = theme.border;
+    header.style.background = theme.headerBg;
+    header.style.borderBottomColor = theme.border;
   });
 
   // 更新按鈕的 active 狀態
-  document.querySelectorAll(".color-option").forEach((btn) => {
-    if ((btn as HTMLElement).dataset.color === color) {
+  document.querySelectorAll<HTMLElement>(".color-option").forEach((btn) => {
+    if (btn.dataset["color"] === color) {
       btn.classList.add("active");
     } else {
       btn.classList.remove("active");
@@ -81,7 +84,7 @@ export function applyColorTheme(color: string): void {
   // 應用透明度
   applyOpacity();
 
-  console.log(`已應用配色: ${theme.name}`);
+  logInfo(`已應用配色: ${theme.name}`);
 }
 
 export function applyOpacity(): void {
@@ -89,12 +92,12 @@ export function applyOpacity(): void {
   const theme = COLOR_THEMES[currentColor];
   if (!theme) return;
 
-  const container = document.querySelector('.container') as HTMLElement;
+  const container = document.querySelector<HTMLElement>('.container');
   if (container) {
     container.style.backgroundColor = hexToRgba(theme.bg, alpha);
   }
 
-  console.log(`已應用透明度: ${currentOpacity}%`);
+  logInfo(`已應用透明度: ${currentOpacity}%`);
 }
 
 // 設置配色和透明度事件監聽器
@@ -102,7 +105,8 @@ export function setupColorListeners(): void {
   // 配色選擇事件
   document.querySelectorAll(".color-option").forEach((btn) => {
     btn.addEventListener("click", (e) => {
-      const color = (e.target as HTMLElement).dataset.color;
+      const color =
+        e.target instanceof HTMLElement ? e.target.dataset["color"] : undefined;
       if (color) {
         saveAndApplyColorTheme(color);
       }
@@ -116,7 +120,9 @@ export function setupColorListeners(): void {
       currentOpacity = opacity;
       opacityValue.textContent = `${opacity}%`;
       applyOpacity();
-      saveOpacityToStorage(opacity);
+      void saveOpacityToStorage(opacity).catch((error: unknown) => {
+        logError("儲存透明度失敗:", error);
+      });
     }
   });
 }

@@ -5,18 +5,25 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/**/*.test.ts",
     "build": "tsc && vite build",
     "serve": "vite preview",
+    "rust:check": "cargo check --manifest-path src-tauri/Cargo.toml",
+    "rust:clippy": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings",
+    "format:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml",
+    "check": "npm run test && npm run build && npm run rust:check && npm run rust:clippy && npm audit --audit-level=moderate",
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.0.0-beta.13",
-    "@tauri-apps/plugin-shell": "^2.3.1",
-    "@tauri-apps/plugin-store": "^2.4.0"
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-store": "^2.4.3"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0-beta.19",
-    "typescript": "^5.4.5",
-    "vite": "^5.2.11"
+    "@tauri-apps/cli": "^2.11.4",
+    "tsx": "^4.22.5",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.3"
   }
 }

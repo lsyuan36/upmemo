@@ -3,6 +3,7 @@ import { DEFAULT_SHORTCUT } from "./constants";
 import { loadShortcutConfig, saveShortcutConfig as saveShortcutConfigToStorage } from "./storage";
 import { registerShortcut as registerShortcutAPI } from "./api";
 import { shortcutInput, resetShortcutBtn, shortcutHint } from "./dom";
+import { logError, logInfo } from "./logger";
 
 let currentShortcut: ShortcutConfig = DEFAULT_SHORTCUT;
 
@@ -10,7 +11,7 @@ let currentShortcut: ShortcutConfig = DEFAULT_SHORTCUT;
 export function initShortcut(): void {
   currentShortcut = loadShortcutConfig();
   updateShortcutDisplay();
-  registerCurrentShortcut();
+  void registerCurrentShortcut();
   setupShortcutListeners();
 }
 
@@ -42,7 +43,7 @@ function setupShortcutListeners(): void {
     };
 
     currentShortcut = newShortcut;
-    saveShortcutConfigToStorage(newShortcut);
+    await saveShortcutConfig(newShortcut);
     updateShortcutDisplay();
     await registerCurrentShortcut();
 
@@ -63,7 +64,7 @@ function setupShortcutListeners(): void {
   // 重置快捷鍵按鈕
   resetShortcutBtn?.addEventListener("click", async () => {
     currentShortcut = { ...DEFAULT_SHORTCUT };
-    saveShortcutConfigToStorage(currentShortcut);
+    await saveShortcutConfig(currentShortcut);
     updateShortcutDisplay();
     await registerCurrentShortcut();
   });
@@ -122,13 +123,21 @@ export async function registerCurrentShortcut(): Promise<void> {
   try {
     const shortcutStr = shortcutToBackendFormat(currentShortcut);
     await registerShortcutAPI(shortcutStr);
-    console.log(`全域快捷鍵已註冊: ${shortcutStr}`);
+    logInfo(`全域快捷鍵已註冊: ${shortcutStr}`);
   } catch (error) {
-    console.error("註冊快捷鍵失敗:", error);
+    logError("註冊快捷鍵失敗:", error);
   }
 }
 
 // 導出當前快捷鍵供其他模組使用
 export function getCurrentShortcut(): ShortcutConfig {
   return currentShortcut;
+}
+
+async function saveShortcutConfig(config: ShortcutConfig): Promise<void> {
+  try {
+    await saveShortcutConfigToStorage(config);
+  } catch (error) {
+    logError("儲存快捷鍵設定失敗:", error);
+  }
 }

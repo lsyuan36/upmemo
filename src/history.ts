@@ -4,6 +4,7 @@ import { historyPanel, historyList, historyBtn, closeHistoryBtn, noteDisplay } f
 import { escapeHtml, formatTimestamp } from "./utils";
 import { saveNote } from "./api";
 import { linkifyText } from "./linkify";
+import { logError, logInfo } from "./logger";
 
 // 顯示歷史記錄面板
 export async function showHistory(): Promise<void> {
@@ -12,7 +13,7 @@ export async function showHistory(): Promise<void> {
     renderHistory(history);
     historyPanel?.classList.remove("hidden");
   } catch (error) {
-    console.error("獲取歷史記錄失敗:", error);
+    logError("獲取歷史記錄失敗:", error);
   }
 }
 
@@ -47,14 +48,18 @@ function renderHistory(history: MemoEntry[]): void {
     .join("");
 
   // 綁定點擊載入事件
-  document.querySelectorAll(".history-item").forEach((item) => {
+  document.querySelectorAll<HTMLElement>(".history-item").forEach((item) => {
     item.addEventListener("click", async (e) => {
-      const target = e.target as HTMLElement;
+      const target = e.target;
       // 如果點擊的是封存或刪除按鈕，不載入
-      if (target.classList.contains("history-item-archive") || target.classList.contains("history-item-delete")) {
+      if (
+        target instanceof HTMLElement &&
+        (target.classList.contains("history-item-archive") ||
+          target.classList.contains("history-item-delete"))
+      ) {
         return;
       }
-      const id = (item as HTMLElement).dataset.id;
+      const id = item.dataset["id"];
       if (id) {
         await loadHistoryItem(id);
       }
@@ -62,10 +67,10 @@ function renderHistory(history: MemoEntry[]): void {
   });
 
   // 綁定封存按鈕事件
-  document.querySelectorAll(".history-item-archive").forEach((btn) => {
+  document.querySelectorAll<HTMLElement>(".history-item-archive").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const id = (e.target as HTMLElement).dataset.id;
+      const id = btn.dataset["id"];
       if (id) {
         await archiveHistoryItem(id);
       }
@@ -73,10 +78,10 @@ function renderHistory(history: MemoEntry[]): void {
   });
 
   // 綁定刪除按鈕事件 (移至垃圾桶，不需要確認)
-  document.querySelectorAll(".history-item-delete").forEach((btn) => {
+  document.querySelectorAll<HTMLElement>(".history-item-delete").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const id = (e.target as HTMLElement).dataset.id;
+      const id = btn.dataset["id"];
       if (id) {
         await deleteHistoryItem(id);
       }
@@ -94,9 +99,9 @@ async function loadHistoryItem(id: string): Promise<void> {
       await saveNote(content);
     }
     hideHistory();
-    console.log("已載入歷史記錄");
+    logInfo("已載入歷史記錄");
   } catch (error) {
-    console.error("載入歷史記錄失敗:", error);
+    logError("載入歷史記錄失敗:", error);
   }
 }
 
@@ -105,9 +110,9 @@ async function deleteHistoryItem(id: string): Promise<void> {
   try {
     await deleteHistoryItemAPI(id);
     await showHistory();
-    console.log("已移至垃圾桶");
+    logInfo("已移至垃圾桶");
   } catch (error) {
-    console.error("移至垃圾桶失敗:", error);
+    logError("移至垃圾桶失敗:", error);
   }
 }
 
@@ -116,23 +121,23 @@ async function archiveHistoryItem(id: string): Promise<void> {
   try {
     await archiveHistoryItemAPI(id);
     await showHistory();
-    console.log("已封存");
+    logInfo("已封存");
   } catch (error) {
-    console.error("封存失敗:", error);
+    logError("封存失敗:", error);
   }
 }
 
 // 設置歷史記錄監聽器
 export function setupHistoryListeners(): void {
-  console.log("設置歷史記錄按鈕監聽器...", historyBtn, closeHistoryBtn);
+  logInfo("設置歷史記錄按鈕監聽器...", historyBtn, closeHistoryBtn);
 
   historyBtn?.addEventListener("click", async () => {
-    console.log("歷史記錄按鈕被點擊");
+    logInfo("歷史記錄按鈕被點擊");
     await showHistory();
   });
 
   closeHistoryBtn?.addEventListener("click", () => {
-    console.log("關閉歷史記錄按鈕被點擊");
+    logInfo("關閉歷史記錄按鈕被點擊");
     hideHistory();
   });
 }

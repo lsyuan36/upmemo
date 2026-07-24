@@ -2,6 +2,7 @@ import type { MemoEntry } from "./types";
 import { getArchive, restoreFromArchive as restoreFromArchiveAPI, permanentlyDeleteArchiveItem as permanentlyDeleteArchiveItemAPI } from "./api";
 import { archivePanel, archiveList, archiveBtn, closeArchiveBtn } from "./dom";
 import { escapeHtml, formatTimestamp } from "./utils";
+import { logError, logInfo } from "./logger";
 
 // 顯示封存面板
 export async function showArchive(): Promise<void> {
@@ -10,7 +11,7 @@ export async function showArchive(): Promise<void> {
     renderArchive(archive);
     archivePanel?.classList.remove("hidden");
   } catch (error) {
-    console.error("獲取封存失敗:", error);
+    logError("獲取封存失敗:", error);
   }
 }
 
@@ -47,10 +48,10 @@ function renderArchive(archive: MemoEntry[]): void {
     .join("");
 
   // 綁定還原按鈕事件
-  document.querySelectorAll(".archive-item-restore").forEach((btn) => {
+  document.querySelectorAll<HTMLElement>(".archive-item-restore").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const id = (e.target as HTMLElement).dataset.id;
+      const id = btn.dataset["id"];
       if (id) {
         await restoreFromArchive(id);
       }
@@ -58,14 +59,14 @@ function renderArchive(archive: MemoEntry[]): void {
   });
 
   // 綁定永久刪除按鈕事件 - 使用雙擊確認機制
-  document.querySelectorAll(".archive-item-delete-permanently").forEach((btn) => {
+  document.querySelectorAll<HTMLElement>(".archive-item-delete-permanently").forEach((btn) => {
     let clickCount = 0;
     let clickTimer: number | null = null;
 
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const id = (e.target as HTMLElement).dataset.id;
-      const target = e.target as HTMLElement;
+      const id = btn.dataset["id"];
+      const target = btn;
 
       if (!id) return;
 
@@ -98,9 +99,9 @@ async function restoreFromArchive(id: string): Promise<void> {
   try {
     await restoreFromArchiveAPI(id);
     await showArchive();
-    console.log("已還原");
+    logInfo("已還原");
   } catch (error) {
-    console.error("還原失敗:", error);
+    logError("還原失敗:", error);
   }
 }
 
@@ -109,9 +110,9 @@ async function permanentlyDeleteArchiveItem(id: string): Promise<void> {
   try {
     await permanentlyDeleteArchiveItemAPI(id);
     await showArchive();
-    console.log("已永久刪除");
+    logInfo("已永久刪除");
   } catch (error) {
-    console.error("永久刪除失敗:", error);
+    logError("永久刪除失敗:", error);
   }
 }
 

@@ -84,3 +84,11 @@ export async function saveFontConfig(chineseFont: string, englishFont: string): 
 export async function registerShortcut(shortcutStr: string): Promise<void> {
   await invoke("register_shortcut", { shortcutStr });
 }
+
+export async function setPreviewImageData(data: string): Promise<void> {
+  await invoke("set_preview_image_data", { data });
+}
+
+export async function takePreviewImageData(): Promise<string> {
+  return await invoke<string>("take_preview_image_data");
+}

@@ -1,6 +1,7 @@
 import type { ShortcutConfig } from "./types";
 import { DEFAULT_SHORTCUT } from "./constants";
 import { Store } from "@tauri-apps/plugin-store";
+import { logError, logInfo } from "./logger";
 
 // store 實例
 let store: Store;
@@ -32,9 +33,9 @@ export async function initStore(): Promise<void> {
     const opacity = await store.get<number>("opacity");
     if (opacity) cache.opacity = opacity;
 
-    console.log("Store 初始化完成，設定已載入");
+    logInfo("Store 初始化完成，設定已載入");
   } catch (error) {
-    console.error("載入設定失敗:", error);
+    logError("載入設定失敗:", error);
   }
 }
 

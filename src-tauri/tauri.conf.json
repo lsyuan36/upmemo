@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
       "capabilities": [
         {
           "identifier": "main-capability",
@@ -39,29 +39,6 @@
             "core:window:allow-current-monitor",
             "core:window:allow-available-monitors",
             "core:webview:allow-create-webview-window",
-            "core:event:allow-emit",
-            "core:event:allow-listen",
-            "shell:allow-open",
-            "store:allow-load",
-            "store:allow-save",
-            "store:allow-get",
-            "store:allow-set",
-            "store:allow-delete",
-            "store:allow-clear",
-            "store:default"
-          ]
-        },
-        {
-          "identifier": "sticky-note-capability",
-          "windows": ["sticky_*"],
-          "permissions": [
-            "core:default",
-            "core:window:allow-start-dragging",
-            "core:window:allow-show",
-            "core:window:allow-hide",
-            "core:window:allow-set-focus",
-            "core:window:allow-is-visible",
-            "core:window:allow-close",
             "shell:allow-open",
             "store:allow-load",
             "store:allow-save",
@@ -80,9 +57,7 @@
             "core:window:allow-close",
             "core:window:allow-show",
             "core:window:allow-set-focus",
-            "core:window:allow-set-fullscreen",
-            "core:event:allow-listen",
-            "core:event:allow-emit"
+            "core:window:allow-set-fullscreen"
           ]
         }
       ]

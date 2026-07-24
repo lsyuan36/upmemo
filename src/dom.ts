@@ -1,28 +1,52 @@
-// DOM 元素引用
-export const noteDisplay = document.getElementById("note-display") as HTMLDivElement;
-export const newMemoBtn = document.getElementById("new-memo-btn");
-export const historyBtn = document.getElementById("history-btn");
-export const archiveBtn = document.getElementById("archive-btn");
-export const trashBtn = document.getElementById("trash-btn");
-export const settingsBtn = document.getElementById("settings-btn");
-export const historyPanel = document.getElementById("history-panel");
-export const archivePanel = document.getElementById("archive-panel");
-export const trashPanel = document.getElementById("trash-panel");
-export const settingsPanel = document.getElementById("settings-panel");
-export const closeHistoryBtn = document.getElementById("close-history-btn");
-export const closeArchiveBtn = document.getElementById("close-archive-btn");
-export const closeTrashBtn = document.getElementById("close-trash-btn");
-export const closeSettingsBtn = document.getElementById("close-settings-btn");
-export const historyList = document.getElementById("history-list");
-export const archiveList = document.getElementById("archive-list");
-export const trashList = document.getElementById("trash-list");
-export const emptyTrashBtn = document.getElementById("empty-trash-btn");
-export const shortcutInput = document.getElementById("toggle-shortcut") as HTMLInputElement;
-export const resetShortcutBtn = document.getElementById("reset-toggle-shortcut");
-export const shortcutHint = document.getElementById("shortcut-hint");
-export const chineseFontSelect = document.getElementById("chinese-font") as HTMLSelectElement;
-export const englishFontSelect = document.getElementById("english-font") as HTMLSelectElement;
-export const fontSizeSlider = document.getElementById("font-size") as HTMLInputElement;
-export const fontSizeValue = document.getElementById("font-size-value");
-export const opacitySlider = document.getElementById("opacity") as HTMLInputElement;
-export const opacityValue = document.getElementById("opacity-value");
+function getRequiredElement<T extends HTMLElement>(
+  id: string,
+  elementClass: { new (): T },
+): T {
+  const element = document.getElementById(id);
+  if (!(element instanceof elementClass)) {
+    throw new Error(`找不到必要元素: ${id}`);
+  }
+
+  return element;
+}
+
+function getOptionalElement<T extends HTMLElement>(
+  id: string,
+  elementClass: { new (): T },
+): T | null {
+  const element = document.getElementById(id);
+  if (element === null) return null;
+  if (!(element instanceof elementClass)) {
+    throw new Error(`元素型別不符合預期: ${id}`);
+  }
+
+  return element;
+}
+
+export const noteDisplay = getRequiredElement("note-display", HTMLDivElement);
+export const newMemoBtn = getOptionalElement("new-memo-btn", HTMLButtonElement);
+export const historyBtn = getOptionalElement("history-btn", HTMLButtonElement);
+export const archiveBtn = getOptionalElement("archive-btn", HTMLButtonElement);
+export const trashBtn = getOptionalElement("trash-btn", HTMLButtonElement);
+export const settingsBtn = getOptionalElement("settings-btn", HTMLButtonElement);
+export const historyPanel = getOptionalElement("history-panel", HTMLDivElement);
+export const archivePanel = getOptionalElement("archive-panel", HTMLDivElement);
+export const trashPanel = getOptionalElement("trash-panel", HTMLDivElement);
+export const settingsPanel = getOptionalElement("settings-panel", HTMLDivElement);
+export const closeHistoryBtn = getOptionalElement("close-history-btn", HTMLButtonElement);
+export const closeArchiveBtn = getOptionalElement("close-archive-btn", HTMLButtonElement);
+export const closeTrashBtn = getOptionalElement("close-trash-btn", HTMLButtonElement);
+export const closeSettingsBtn = getOptionalElement("close-settings-btn", HTMLButtonElement);
+export const historyList = getOptionalElement("history-list", HTMLDivElement);
+export const archiveList = getOptionalElement("archive-list", HTMLDivElement);
+export const trashList = getOptionalElement("trash-list", HTMLDivElement);
+export const emptyTrashBtn = getOptionalElement("empty-trash-btn", HTMLButtonElement);
+export const shortcutInput = getOptionalElement("toggle-shortcut", HTMLInputElement);
+export const resetShortcutBtn = getOptionalElement("reset-toggle-shortcut", HTMLButtonElement);
+export const shortcutHint = getOptionalElement("shortcut-hint", HTMLSpanElement);
+export const chineseFontSelect = getOptionalElement("chinese-font", HTMLSelectElement);
+export const englishFontSelect = getOptionalElement("english-font", HTMLSelectElement);
+export const fontSizeSlider = getOptionalElement("font-size", HTMLInputElement);
+export const fontSizeValue = getOptionalElement("font-size-value", HTMLSpanElement);
+export const opacitySlider = getOptionalElement("opacity", HTMLInputElement);
+export const opacityValue = getOptionalElement("opacity-value", HTMLSpanElement);

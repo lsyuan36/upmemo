@@ -2,6 +2,7 @@ import type { MemoEntry } from "./types";
 import { getTrash, restoreFromTrash as restoreFromTrashAPI, permanentlyDeleteTrashItem as permanentlyDeleteTrashItemAPI, emptyTrash as emptyTrashAPI } from "./api";
 import { trashPanel, trashList, trashBtn, closeTrashBtn, emptyTrashBtn } from "./dom";
 import { escapeHtml, formatTimestamp } from "./utils";
+import { logError, logInfo } from "./logger";
 
 // 顯示垃圾桶面板
 export async function showTrash(): Promise<void> {
@@ -10,7 +11,7 @@ export async function showTrash(): Promise<void> {
     renderTrash(trash);
     trashPanel?.classList.remove("hidden");
   } catch (error) {
-    console.error("獲取垃圾桶失敗:", error);
+    logError("獲取垃圾桶失敗:", error);
   }
 }
 
@@ -47,10 +48,10 @@ function renderTrash(trash: MemoEntry[]): void {
     .join("");
 
   // 綁定還原按鈕事件
-  document.querySelectorAll(".trash-item-restore").forEach((btn) => {
+  document.querySelectorAll<HTMLElement>(".trash-item-restore").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const id = (e.target as HTMLElement).dataset.id;
+      const id = btn.dataset["id"];
       if (id) {
         await restoreFromTrash(id);
       }
@@ -58,14 +59,14 @@ function renderTrash(trash: MemoEntry[]): void {
   });
 
   // 綁定永久刪除按鈕事件 - 使用雙擊確認機制
-  document.querySelectorAll(".trash-item-delete-permanently").forEach((btn) => {
+  document.querySelectorAll<HTMLElement>(".trash-item-delete-permanently").forEach((btn) => {
     let clickCount = 0;
     let clickTimer: number | null = null;
 
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const id = (e.target as HTMLElement).dataset.id;
-      const target = e.target as HTMLElement;
+      const id = btn.dataset["id"];
+      const target = btn;
 
       if (!id) return;
 
@@ -98,9 +99,9 @@ async function restoreFromTrash(id: string): Promise<void> {
   try {
     await restoreFromTrashAPI(id);
     await showTrash();
-    console.log("已還原");
+    logInfo("已還原");
   } catch (error) {
-    console.error("還原失敗:", error);
+    logError("還原失敗:", error);
   }
 }
 
@@ -109,9 +110,9 @@ async function permanentlyDeleteTrashItem(id: string): Promise<void> {
   try {
     await permanentlyDeleteTrashItemAPI(id);
     await showTrash();
-    console.log("已永久刪除");
+    logInfo("已永久刪除");
   } catch (error) {
-    console.error("永久刪除失敗:", error);
+    logError("永久刪除失敗:", error);
   }
 }
 
@@ -120,9 +121,9 @@ async function emptyTrash(): Promise<void> {
   try {
     await emptyTrashAPI();
     await showTrash();
-    console.log("垃圾桶已清空");
+    logInfo("垃圾桶已清空");
   } catch (error) {
-    console.error("清空垃圾桶失敗:", error);
+    logError("清空垃圾桶失敗:", error);
   }
 }
 

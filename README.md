@@ -1,174 +1,138 @@
 # UpMemo
 
-<div align="center">
+UpMemo 是一個以 Tauri v2 製作的桌面便條工具。現行版本以單一主視窗為主要工作流，支援本機自動儲存、歷史/封存/垃圾桶、配色與字體設定、全域快捷鍵、圖片插入與全螢幕圖片預覽。
 
-一個輕量級的桌面便利貼應用程式
+## 目前狀態
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Tauri](https://img.shields.io/badge/Tauri-2.0-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue)
+- 主應用是 Tauri v2 + Vite + TypeScript，前端使用原生 DOM，不使用 React。
+- 多便利貼視窗功能目前仍停用；相關前端封裝、Rust commands 與 `sticky_*` capability 保留作為相容 API 與後續恢復基礎。
+- 圖片預覽使用獨立 `image-preview` Tauri 視窗；主視窗先把圖片資料寫入 Rust 記憶體狀態，預覽頁再透過 command 取出，避免跨視窗 event race。
+- `src-tauri/gen/schemas/*` 是 Tauri 工具產生的 schema，不要手動編輯；來源是 `src-tauri/tauri.conf.json` 與目前安裝的 Tauri 套件版本。
+- `package-lock.json` 與 `src-tauri/Cargo.lock` 應跟版本一起提交，用來鎖定前端與 Rust/Tauri 依賴。
 
-</div>
- 
+## 功能
+
+- 主視窗便條編輯與自動儲存
+- 歷史記錄、封存與垃圾桶
+- 配色、透明度、中文字體/英文字體與字體大小設定
+- 全域快捷鍵，預設 `Ctrl+Down`
+- 系統托盤顯示/隱藏與退出
+- 網址自動轉換為連結，支援 `http://`、`https://` 與 `www.`
+- 圖片貼上、拖放、縮放、選取、刪除與持久化
+- 雙擊圖片開啟全螢幕預覽，支援 `Ctrl + 滾輪` 縮放與 `Esc` 關閉
+
 ## 圖片功能
 
-支援從剪貼簿貼上圖片與拖放圖片至編輯區（`note-display`）。
+支援從剪貼簿貼上圖片與拖放圖片到編輯區。
 
-- 貼上圖片
-  - 在編輯區內按 `Ctrl+V`（或 `Cmd+V`）貼上剪貼簿圖片。
-  - 單張貼上大小上限 5MB；超過會提示。
-- 拖放插入
-  - 從檔案總管拖放 PNG/JPEG/GIF 到編輯區即可插入。
-  - 單檔上限 10MB；超過會提示。
-- 影像壓縮與縮放
-  - 貼上與拖放會自動壓縮以降低儲存大小：
-    - JPEG：品質 0.85。
-    - PNG：保留透明，最長邊自動縮放至 1600px（若原圖較大）。
-    - GIF：保留原始資料避免破壞動畫。
-- 圖片縮放
-  - 滑到圖片上會顯示右下角圓形縮放點，拖曳可調整寬度（50px 到編輯區寬度）。
-- 選取與刪除
-  - 點選圖片容器會出現藍色外框表示選取。
-  - 按 `Delete` 或 `Backspace` 可刪除選取的圖片。
-- 持久化
-  - 圖片以 Data URL 內嵌保存，重新開啟或切換視窗後仍可顯示。
-- 注意事項
-  - 大量圖片會使內容字串增大，可能影響載入/保存效能。
-  - 桌面版已啟用視窗拖放（`tauri.conf.json` 的 `dragDropEnabled: true`）。
+- 貼上圖片：在編輯區使用 `Ctrl+V` 或 `Cmd+V`，單張上限 5MB。
+- 拖放圖片：從檔案總管拖放 PNG/JPEG/GIF 到編輯區，單檔上限 10MB。
+- 壓縮規則：JPEG 品質 0.85；大型 PNG 會保留透明度並縮放最長邊至 1600px；GIF 保留原始資料。
+- 圖片縮放：滑到圖片上會顯示右下角縮放點，可拖曳調整寬度。
+- 圖片刪除：點選圖片容器後按 `Delete` 或 `Backspace`。
+- 圖片預覽：雙擊圖片，或點選圖片後按 `Enter`/`Space`，開啟全螢幕預覽；背景點擊或 `Esc` 關閉。
 
-## 📝 專案簡介
+## 開發環境
 
-UpMemo 是一個使用 Tauri v2 開發的桌面便利貼應用程式。它提供一個小巧、始終置頂的無邊框視窗，模擬真實便利貼的外觀和使用體驗。
+- Node.js 20+ 建議
+- Rust stable
+- Windows / macOS / Linux；目前主要驗證環境是 Windows
 
-### ✨ 特色功能
-
-- 🎯 **始終置頂** - 永遠顯示在所有視窗最上層
-- 🖼️ **無邊框設計** - 簡潔的便利貼外觀
-- 💾 **自動儲存** - 即時保存你的筆記內容
-- 🎨 **經典黃色** - 模擬真實便利貼的視覺效果
-- ⚡ **輕量快速** - 使用 Rust 和 Tauri 打造，性能優異
-- 🔒 **隱私優先** - 所有資料儲存在本機
-
-## 🛠️ 技術堆疊
-
-- **前端**: TypeScript + Vite + Vanilla JavaScript
-- **後端**: Rust + Tauri v2.0.0-beta
-- **UI**: 簡潔的 textarea 介面
-
-## 📦 安裝與使用
-
-### 系統需求
-
-- Node.js 16+
-- Rust 1.70+
-- 作業系統: Windows / macOS / Linux
-
-### 開發環境設定
-
-1. **克隆專案**
-   ```bash
-   git clone https://github.com/yourusername/upmemo.git
-   cd upmemo
-   ```
-
-2. **安裝依賴**
-   ```bash
-   npm install
-   ```
-
-3. **啟動開發模式**
-   ```bash
-   npm run tauri dev
-   ```
-
-### 建置應用程式
-
-建置生產環境版本：
+安裝依賴：
 
 ```bash
-npm run build
+npm install
 ```
 
-建置完成的執行檔將位於 `src-tauri/target/release/bundle/` 目錄下。
+啟動前端開發伺服器：
 
-## 🎮 使用說明
+```bash
+npm run dev
+```
 
-1. 啟動應用程式後，便利貼視窗會出現在螢幕上
-2. 直接在黃色便利貼區域輸入文字
-3. 內容會自動儲存，無需手動操作
-4. 便利貼始終保持在所有視窗最上層
+啟動 Tauri 開發模式：
 
-## 🔧 開發指令
+```bash
+npm run tauri dev
+```
+
+## 品質檢查
 
 | 指令 | 說明 |
-|------|------|
-| `npm run dev` | 啟動 Vite 開發伺服器 |
-| `npm run build` | 建置前端程式碼 |
-| `npm run tauri dev` | 啟動 Tauri 開發模式 |
-| `npm run tauri build` | 建置完整應用程式 |
+| --- | --- |
+| `npm run typecheck` | 執行 TypeScript 型別檢查 |
+| `npm run build` | 執行 TypeScript 檢查並建置 Vite 前端 |
+| `npm run rust:check` | 執行 Rust 編譯檢查 |
+| `npm run rust:clippy` | 執行 Rust clippy，warning 會視為錯誤 |
+| `npm run format:rust` | 格式化 Rust 程式碼 |
+| `npm run check` | 執行測試、前端 build、Rust check、Rust clippy 與 npm audit |
 
-## 📁 專案結構
+## 維護規則
 
+- `AGENTS.md`、`src/AGENTS.md`、`src-tauri/AGENTS.md` 是專案協作規則檔；更新規則時應讓它們留在版本控管可見範圍內。
+- 升級 Tauri 或 capability 設定後，使用 `npm run tauri build` 或 Tauri CLI 流程同步 `src-tauri/gen/schemas/*`，不要直接手改 schema。
+- 升級 npm 或 Cargo 依賴時，同步提交 `package-lock.json` 與 `src-tauri/Cargo.lock`。
+
+## 建置
+
+建置完整桌面應用：
+
+```bash
+npm run tauri build
 ```
+
+主要輸出位置：
+
+- `src-tauri/target/release/upmemo.exe`
+- `src-tauri/target/release/bundle/msi/`
+- `src-tauri/target/release/bundle/nsis/`
+
+`dist/`、`node_modules/` 與 `src-tauri/target/` 是建置輸出或本機依賴目錄，已由 `.gitignore` 忽略。
+
+## 專案結構
+
+```text
 upmemo/
-├── src/                    # 前端程式碼
-│   ├── main.ts            # 主要邏輯
-│   ├── index.html         # HTML 模板
-│   └── styles.css         # 樣式表
-├── src-tauri/             # Tauri 後端程式碼
-│   ├── src/
-│   │   └── main.rs        # Rust 主程式
-│   ├── Cargo.toml         # Rust 依賴配置
-│   └── tauri.conf.json    # Tauri 配置檔
-├── package.json           # Node.js 依賴配置
-└── vite.config.ts         # Vite 配置檔
+├── src/
+│   ├── main.ts                # 主視窗初始化與自動儲存流程
+│   ├── dom.ts                 # 型別化 DOM 入口
+│   ├── image.ts               # 圖片事件協調
+│   ├── imageEncoding.ts       # 圖片壓縮與 Data URL 轉換
+│   ├── imagePreview.ts        # 建立圖片預覽視窗
+│   ├── imageResize.ts         # 圖片縮放 UI
+│   ├── preview.ts             # 圖片預覽頁面邏輯
+│   ├── linkify.ts             # 網址轉換與游標保留
+│   └── logger.ts              # 前端 logging 入口
+├── src-tauri/
+│   ├── tauri.conf.json        # Tauri window/capability 來源
+│   ├── gen/schemas/           # Tauri 產生的 schema，不手動編輯
+│   └── src/
+│       ├── main.rs            # Tauri builder 入口
+│       ├── models.rs          # 共用資料模型
+│       ├── storage.rs         # 檔案與 JSON 存取
+│       ├── note_commands.rs   # 便條 commands
+│       ├── collection_commands.rs
+│       ├── font_commands.rs
+│       ├── preview_commands.rs # 圖片預覽暫存狀態 commands
+│       ├── shortcut_commands.rs
+│       ├── sticky_commands.rs # 保留的 sticky API
+│       └── tray.rs            # 系統托盤與顯示切換
+├── package.json
+├── package-lock.json
+└── vite.config.ts
 ```
 
-## 🎨 視窗配置
+## 多視窗與 sticky API
 
-- **尺寸**: 300x250 像素
-- **邊框**: 無邊框 (frameless)
-- **置頂**: 始終置頂 (alwaysOnTop)
-- **透明**: 支援背景透明
-- **工作列**: 不顯示在工作列
+v0.1.2 起，多便利貼視窗工作流暫時停用，主流程回到單一主視窗。為了避免破壞既有資料與後續恢復路徑，以下項目仍保留：
 
-## 🚀 未來規劃
+- `src/stickyNotes.ts`
+- `src-tauri/src/sticky_commands.rs`
+- `sticky-note-capability`
+- `sticky_*` window label 規則
 
-- [ ] 多便利貼支援
-- [ ] 自訂顏色主題
-- [ ] 便利貼位置記憶
-- [ ] 快捷鍵支援
-- [ ] 便利貼分類管理
-- [ ] 雲端同步功能
-- [ ] 提醒通知功能
+目前不要把這些保留 API 視為完整啟用的多視窗功能。
 
-## 🤝 貢獻指南
+## 授權
 
-歡迎提交 Issue 和 Pull Request！
-
-1. Fork 本專案
-2. 建立你的功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的變更 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 開啟 Pull Request
-
-## 📄 授權條款
-
-本專案採用 MIT 授權條款 - 詳見 [LICENSE](LICENSE) 文件
-
-## 👤 作者
-
-**Your Name**
-
-- GitHub: [@lsyuan.36](https://github.com/lsyuan36)
-
-## 🙏 致謝
-
-- [Tauri](https://tauri.app/) - 提供優秀的跨平台應用框架
-- [Vite](https://vitejs.dev/) - 快速的前端建置工具
-
----
-
-<div align="center">
-如果這個專案對你有幫助，請給個 ⭐️ 支持一下！
-</div>
+MIT
